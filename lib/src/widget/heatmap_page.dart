@@ -35,6 +35,7 @@ class HeatMapPage extends StatelessWidget {
 
   /// The double value of every block's fontSize.
   final double? fontSize;
+  final FontWeight? fontWeight;
 
   /// The datasets which fill blocks based on its value.
   final Map<DateTime, int>? datasets;
@@ -82,6 +83,7 @@ class HeatMapPage extends StatelessWidget {
     required this.endDate,
     this.size,
     this.fontSize,
+    this.fontWeight,
     this.datasets,
     this.defaultColor,
     this.textColor,
@@ -142,17 +144,11 @@ class HeatMapPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: <Widget>[
+      children: [
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Show week labels to left side of heatmap.
-            HeatMapWeekText(
-              margin: margin,
-              fontSize: fontSize,
-              size: size,
-              fontColor: textColor,
-            ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -162,6 +158,7 @@ class HeatMapPage extends StatelessWidget {
                   margin: margin,
                   fontSize: fontSize,
                   fontColor: textColor,
+                  fontWeight: fontWeight,
                   size: size,
                 ),
 

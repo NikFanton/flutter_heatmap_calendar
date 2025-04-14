@@ -13,6 +13,8 @@ class HeatMapMonthText extends StatelessWidget {
   /// The double value of font size.
   final double? fontSize;
 
+  final FontWeight? fontWeight;
+
   /// The color value of font color.
   final Color? fontColor;
 
@@ -23,6 +25,7 @@ class HeatMapMonthText extends StatelessWidget {
     Key? key,
     this.firstDayInfos,
     this.fontSize,
+    this.fontWeight,
     this.fontColor,
     this.size,
     this.margin,
@@ -79,6 +82,7 @@ class HeatMapMonthText extends StatelessWidget {
       style: TextStyle(
         color: fontColor,
         fontSize: fontSize,
+        fontWeight: fontWeight ?? FontWeight.w500,
       ),
     );
   }

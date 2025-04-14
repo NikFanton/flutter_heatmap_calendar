@@ -13,6 +13,7 @@ class HeatMapWeekText extends StatelessWidget {
 
   /// The color value of every font's color.
   final Color? fontColor;
+  final FontWeight? fontWeight;
 
   const HeatMapWeekText({
     Key? key,
@@ -20,6 +21,7 @@ class HeatMapWeekText extends StatelessWidget {
     this.fontSize,
     this.size,
     this.fontColor,
+    this.fontWeight,
   }) : super(key: key);
 
   @override
@@ -36,6 +38,7 @@ class HeatMapWeekText extends StatelessWidget {
               style: TextStyle(
                 fontSize: fontSize ?? 12,
                 color: fontColor,
+                fontWeight: fontWeight ?? FontWeight.w500,
               ),
             ),
           ),
