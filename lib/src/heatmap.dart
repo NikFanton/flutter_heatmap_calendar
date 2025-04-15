@@ -117,6 +117,26 @@ class HeatMap extends StatefulWidget {
 }
 
 class _HeatMap extends State<HeatMap> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Delay to allow widget tree to build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.scrollable) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final heatMapPage = HeatMapPage(
@@ -156,6 +176,7 @@ class _HeatMap extends State<HeatMap> {
             if (widget.scrollable)
               Expanded(
                 child: SingleChildScrollView(
+                  controller: _scrollController,
                   scrollDirection: Axis.horizontal,
                   child: heatMapPage,
                 ),
