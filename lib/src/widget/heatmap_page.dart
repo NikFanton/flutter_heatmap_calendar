@@ -75,6 +75,7 @@ class HeatMapPage extends StatelessWidget {
   final Function(DateTime)? onClick;
 
   final bool? showText;
+  final bool showMonthGap;
 
   HeatMapPage({
     Key? key,
@@ -92,19 +93,33 @@ class HeatMapPage extends StatelessWidget {
     this.onClick,
     this.margin,
     this.showText,
+    this.showMonthGap = true,
   })  : _dateDifferent = endDate.difference(startDate).inDays,
         maxValue = DatasetsUtil.getMaxValue(datasets),
         super(key: key);
 
   /// Get [HeatMapColumn] from [startDate] to [endDate].
   List<Widget> _heatmapColumnList() {
+    // List of vertical columns (each column = 7 blocks).
     List<Widget> columns = [];
+
+    // Temporary list to collect one column's worth of day/placeholder widgets.
     List<Widget> currentColumnDays = [];
-    int daysPerColumn = 7;
+
+    const int daysPerColumn = 7;
+
+    // Tracks the currently processed month.
     int? currentMonth;
+
+    // If a month transition happens mid-column, we store how many empty boxes
+    // need to be added at the top of the *next* column to complete the visual gap.
     int carryoverTopPadding = 0;
+
+    // If the previous column ended exactly at the end of the month (full 7 days),
+    // we still need to insert a new empty column as a separator.
     bool forceEmptyColumnOnNext = false;
 
+    // Align the cursor to the Sunday before or of startDate.
     DateTime cursor = DateUtil.changeDay(startDate, -(startDate.weekday % 7));
     DateTime limit = endDate;
 
@@ -112,8 +127,8 @@ class HeatMapPage extends StatelessWidget {
       DateTime nextDay = cursor.add(const Duration(days: 1));
       bool isMonthChangeNext = nextDay.month != cursor.month;
 
-      // Start new column with carryover padding
-      if (currentColumnDays.isEmpty) {
+      // Start new column with carryover padding or forced empty gap
+      if (showMonthGap && currentColumnDays.isEmpty) {
         if (carryoverTopPadding > 0) {
           currentColumnDays.addAll(List.generate(
             carryoverTopPadding,
@@ -127,14 +142,14 @@ class HeatMapPage extends StatelessWidget {
           ));
           forceEmptyColumnOnNext = false;
 
-          // Add the empty spacer column
+          // Add the column of empty boxes
           columns.add(Column(children: currentColumnDays));
           _firstDayInfos.add(currentMonth!);
           currentColumnDays = [];
         }
       }
 
-      // Add the actual day
+      // Add the actual day container for this date.
       currentColumnDays.add(HeatMapContainer(
         date: cursor,
         backgroundColor: defaultColor,
@@ -148,8 +163,10 @@ class HeatMapPage extends StatelessWidget {
         selectedColor: _resolveSelectedColor(cursor),
       ));
 
-      if (isMonthChangeNext || currentColumnDays.length == daysPerColumn) {
-        if (isMonthChangeNext) {
+      // If it's time to close the column
+      if ((showMonthGap && isMonthChangeNext) ||
+          currentColumnDays.length == daysPerColumn) {
+        if (showMonthGap && isMonthChangeNext) {
           if (currentColumnDays.length < daysPerColumn) {
             int bottomPadding = daysPerColumn - currentColumnDays.length;
             currentColumnDays
@@ -176,6 +193,7 @@ class HeatMapPage extends StatelessWidget {
       cursor = nextDay;
     }
 
+    // Final column (if unfinished)
     if (currentColumnDays.isNotEmpty) {
       while (currentColumnDays.length < daysPerColumn) {
         currentColumnDays.add(_emptyDayBox());

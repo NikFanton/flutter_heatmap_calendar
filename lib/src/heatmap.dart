@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_heatmap_calendar/src/widget/heatmap_week_text.dart';
-import './widget/heatmap_page.dart';
-import './widget/heatmap_color_tip.dart';
+
 import './data/heatmap_color_mode.dart';
 import './util/date_util.dart';
+import './widget/heatmap_color_tip.dart';
+import './widget/heatmap_page.dart';
 
 class HeatMap extends StatefulWidget {
   /// The Date value of start day of heatmap.
@@ -66,6 +67,11 @@ class HeatMap extends StatefulWidget {
   /// Default value is false.
   final bool? showText;
 
+  /// Show gap between months
+  ///
+  /// Default value is true.
+  final bool showMonthGap;
+
   /// Show color tip which represents the color range at the below.
   ///
   /// Default value is true.
@@ -110,6 +116,7 @@ class HeatMap extends StatefulWidget {
     this.colorTipHelper,
     this.colorTipCount,
     this.colorTipSize,
+    this.showMonthGap = true,
   }) : super(key: key);
 
   @override
@@ -155,6 +162,7 @@ class _HeatMap extends State<HeatMap> {
       onClick: widget.onClick,
       margin: widget.margin,
       showText: widget.showText,
+      showMonthGap: widget.showMonthGap,
     );
 
     return Column(
