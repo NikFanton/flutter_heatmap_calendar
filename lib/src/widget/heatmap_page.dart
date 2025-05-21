@@ -1,12 +1,12 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
-import './heatmap_month_text.dart';
-import './heatmap_column.dart';
+import 'package:flutter_heatmap_calendar/src/extentions/first_or_null_extension.dart';
+import 'package:flutter_heatmap_calendar/src/widget/heatmap_container.dart';
+
 import '../data/heatmap_color_mode.dart';
 import '../util/datasets_util.dart';
 import '../util/date_util.dart';
-import './heatmap_week_text.dart';
+import './heatmap_column.dart';
+import './heatmap_month_text.dart';
 
 class HeatMapPage extends StatelessWidget {
   /// List value of every sunday's month information.
@@ -98,47 +98,128 @@ class HeatMapPage extends StatelessWidget {
 
   /// Get [HeatMapColumn] from [startDate] to [endDate].
   List<Widget> _heatmapColumnList() {
-    // Create empty list.
     List<Widget> columns = [];
+    List<Widget> currentColumnDays = [];
+    int daysPerColumn = 7;
+    int? currentMonth;
+    int carryoverTopPadding = 0;
+    bool forceEmptyColumnOnNext = false;
 
-    // Set cursor(position) to first day of weeks
-    // until cursor reaches the final week.
-    for (int datePos = 0 - (startDate.weekday % 7);
-        datePos <= _dateDifferent;
-        datePos += 7) {
-      // Get first day of week by adding cursor's value to startDate.
-      DateTime _firstDay = DateUtil.changeDay(startDate, datePos);
+    DateTime cursor = DateUtil.changeDay(startDate, -(startDate.weekday % 7));
+    DateTime limit = endDate;
 
-      columns.add(HeatMapColumn(
-        // If last day is not saturday, week also includes future Date.
-        // So we have to make future day on last column blanck.
-        //
-        // To make empty space to future day, we have to pass this HeatMapPage's
-        // endDate to HeatMapColumn's endDate.
-        startDate: _firstDay,
-        endDate: datePos <= _dateDifferent - 7
-            ? DateUtil.changeDay(startDate, datePos + 6)
-            : endDate,
-        colorMode: colorMode,
-        numDays: min(endDate.difference(_firstDay).inDays + 1, 7),
+    while (cursor.isBefore(limit) || cursor.isAtSameMomentAs(limit)) {
+      DateTime nextDay = cursor.add(const Duration(days: 1));
+      bool isMonthChangeNext = nextDay.month != cursor.month;
+
+      // Start new column with carryover padding
+      if (currentColumnDays.isEmpty) {
+        if (carryoverTopPadding > 0) {
+          currentColumnDays.addAll(List.generate(
+            carryoverTopPadding,
+            (_) => _emptyDayBox(),
+          ));
+          carryoverTopPadding = 0;
+        } else if (forceEmptyColumnOnNext) {
+          currentColumnDays.addAll(List.generate(
+            daysPerColumn,
+            (_) => _emptyDayBox(),
+          ));
+          forceEmptyColumnOnNext = false;
+
+          // Add the empty spacer column
+          columns.add(Column(children: currentColumnDays));
+          _firstDayInfos.add(currentMonth!);
+          currentColumnDays = [];
+        }
+      }
+
+      // Add the actual day
+      currentColumnDays.add(HeatMapContainer(
+        date: cursor,
+        backgroundColor: defaultColor,
         size: size,
         fontSize: fontSize,
-        defaultColor: defaultColor,
-        colorsets: colorsets,
         textColor: textColor,
         borderRadius: borderRadius,
         margin: margin,
-        maxValue: maxValue,
-        onClick: onClick,
-        datasets: datasets,
         showText: showText,
+        onClick: onClick,
+        selectedColor: _resolveSelectedColor(cursor),
       ));
 
-      // also add first day's month information to _firstDayInfos list.
-      _firstDayInfos.add(_firstDay.month);
+      if (isMonthChangeNext || currentColumnDays.length == daysPerColumn) {
+        if (isMonthChangeNext) {
+          if (currentColumnDays.length < daysPerColumn) {
+            int bottomPadding = daysPerColumn - currentColumnDays.length;
+            currentColumnDays
+                .addAll(List.generate(bottomPadding, (_) => _emptyDayBox()));
+            carryoverTopPadding = 7 - bottomPadding;
+          } else {
+            forceEmptyColumnOnNext = true;
+          }
+        }
+
+        columns.add(Column(children: currentColumnDays));
+
+        final firstRealDate = currentColumnDays
+            .whereType<HeatMapContainer>()
+            .map((c) => c.date)
+            .firstOrNull;
+        _firstDayInfos
+            .add(firstRealDate?.month ?? currentMonth ?? cursor.month);
+
+        currentColumnDays = [];
+      }
+
+      currentMonth = cursor.month;
+      cursor = nextDay;
+    }
+
+    if (currentColumnDays.isNotEmpty) {
+      while (currentColumnDays.length < daysPerColumn) {
+        currentColumnDays.add(_emptyDayBox());
+      }
+      columns.add(Column(children: currentColumnDays));
+
+      final firstRealDate = currentColumnDays
+          .whereType<HeatMapContainer>()
+          .map((c) => c.date)
+          .firstOrNull;
+      _firstDayInfos.add(firstRealDate?.month ?? currentMonth!);
     }
 
     return columns;
+  }
+
+  Widget _emptyDayBox() {
+    return Container(
+      margin: margin ?? const EdgeInsets.all(2),
+      width: size ?? 20,
+      height: size ?? 20,
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(borderRadius ?? 5),
+      ),
+    );
+  }
+
+  Color? _resolveSelectedColor(DateTime date) {
+    final value = datasets?[date];
+    if (value == null) return null;
+
+    if (colorMode == ColorMode.opacity) {
+      return _getOpacityColor(value);
+    } else {
+      return DatasetsUtil.getColor(colorsets, value);
+    }
+  }
+
+  Color _getOpacityColor(int value) {
+    final base = colorsets?.values.first ?? Colors.transparent;
+    final ratio = value / (maxValue ?? 1);
+    final alpha = (ratio * 255).round().clamp(0, 255);
+    return base.withAlpha(alpha);
   }
 
   @override
